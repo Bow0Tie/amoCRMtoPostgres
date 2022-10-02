@@ -1,0 +1,63 @@
+version: '3'
+
+networks:
+  development:
+
+services:
+  site:
+    build:
+      context: .
+      dockerfile: nginx.dockerfile
+    container_name: ${APP_NAME}-nginx
+    ports:
+      - 80:80
+    volumes:
+      - ./src:/var/www/html:delegated
+    depends_on:
+      - php
+      - redis
+      - database
+      - mailhog
+    networks:
+      - development
+
+  database:
+    image: postgres:13.1-alpine
+    container_name: ${APP_NAME}-database
+    restart: unless-stopped
+    tty: true
+    ports:
+      - 6543:5432
+    environment:
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_DATABASE}
+    networks:
+      - development
+
+  php:
+    build:
+      context: .
+      dockerfile: php.dockerfile
+    container_name: ${APP_NAME}-php
+    volumes:
+      - ./src:/var/www/html:delegated
+    networks:
+      - development
+
+  redis:
+    image: redis:alpine
+    container_name: ${APP_NAME}-redis
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+    networks:
+      - development
+      
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: ${APP_NAME}-mailhog
+    ports:
+      - 1025:1025
+    networks:
+      - development
